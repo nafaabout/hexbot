@@ -1,14 +1,15 @@
-let stage, canvas, cannon, enemies = [], colors = [], usedColors = [];
+let stage, canvas, cannon, rects = [], colors = []
 let rectWidth = rectHeight = 50;
 let API_URL = 'http://api.noopschallenge.com/hexbot';
 
 class Cannon {
 
-  constructor(x, y, color) {
+  constructor(x, y, color, strokeColor) {
     this.x = x;
     this.y = y;
     this.color = color;
-    this.rect = new Rect(x, y, 20, 50, color)
+    this.strokeColor = strokeColor;
+    this.rect = new Rect(x, y, 20, 50, color, strokeColor);
     this.bullets = []
   }
 
@@ -17,13 +18,15 @@ class Cannon {
   }
 
   shoot() {
-    let bullet = new Bullet(this.x + 25, this.y, this.color);
+    let bullet = new Bullet(this.x + 10, this.y - 30, this.color);
     this.bullets.push(bullet);
     bullet.draw()
+    bullet.move({ y: -10 });
   }
 
   move(by) {
     this.x += by.x ? by.x : 0;
+    this.y += by.y ? by.y : 0;
     this.rect.move(by)
   }
 
@@ -36,17 +39,21 @@ class Cannon {
 
 class Rect {
 
-  constructor(x, y, width, height, color) {
+  constructor(x, y, width, height, color, strokeColor) {
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
     this.color = color;
+    this.strokeColor = strokeColor;
     this.shape = new createjs.Shape();
+    this.tween = createjs.Tween.get(this.shape);
   }
 
   draw() {
-    this.shape.graphics.beginFill(this.color)
+    this.shape.graphics
+      .beginFill(this.color)
+      .beginStroke(this.strokeColor)
       .drawRect(this.x, this.y, this.width, this.height);
 
     this.shape.x = this.x
@@ -83,13 +90,12 @@ class Bullet {
     this.radius = 10;
     this.color = color;
     this.shape = new createjs.Shape();
+    this.tween = createjs.Tween.get(this.shape)
   }
 
-  move(by) {
-    this.x += by.x ? by.x : 0;
-    this.y += by.y ? by.y : 0;
-    this.shape.x = this.x;
-    this.shape.y = this.y;
+  move(to) {
+    console.log(to);
+    this.tween.to(to, 2000);
   }
 
   draw() {
@@ -109,48 +115,28 @@ async function start_app() {
   setupCanvas('target')
   stage = new createjs.Stage(canvas);
 
-  getColors(50, function(respColors) {
+  getColors(5, function(respColors) {
     colors = respColors;
     start_game(stage, colors)
   })
 
-  // let x = getRandom(100, canvas.width - 100);
-  // let y = getRandom(100, canvas.height - 100);
-  //
-  // rect = new Rect(x, y, rectWidth, rectHeight, colors.pop().value)
-  //
-  // rect.shape.alpha = 0
-  // createjs.Tween.get(rect.shape).to({ alpha: 1 }, 500);
-  //
-  // rect.draw(stage);
-  //
   document.addEventListener('keydown', handleKeyDown)
-
 }
 
 function start_game(stage, colors) {
-  while(usedColors.length < 5) {
-    usedColors.push(colors.pop());
-  }
-
-  cannon = createCannon(stage, usedColors[0]);
+  cannon = createCannon(stage, colors[0]);
   createjs.Ticker.on('tick', function() {
-    if(cannon) {
-      cannon.bullets.forEach(function (bullet) {
-        bullet.move({ y: -5 })
-      })
-    }
     stage.update()
   })
 
-  // usedColors.forEach(createEnemies)
+  createRects(colors);
 }
 
 function createCannon(stage, color) {
   let x = canvas.width / 2 + 100;
   let y = canvas.height - 50;
 
-  let cannon = new Cannon(x, y, color)
+  let cannon = new Cannon(x, y, color, 'gray')
   cannon.draw(stage)
 
   return cannon;
@@ -171,8 +157,8 @@ function handleKeyDown (e) {
     case 32:
       // substract rect.height from y of the previous rect
       cannon.shoot()
-      idx = getRandom(0, usedColors.length)
-      nextColor = usedColors[idx]
+      idx = getRandom(0, colors.length)
+      nextColor = colors[idx]
       cannon.changeColor(nextColor)
       break;
 
@@ -188,14 +174,20 @@ function handleKeyDown (e) {
 
 }
 
-function createEnemies(color) {
-  let enemiesCount = getRandom(1, 5)
+function createRects(colors) {
+  let rectsCount, x = 100, y = 10;
+  let strokeColor = 'darkred';
+  let rectWidth = 50;
 
-  for(let i=0; i < enemiesCount; i++) {
-    let x = getRandom(100, canvas.width - 100)
-    let y = 0
-    enemies.push(new Rect(x, y, 50, 50, color));
-  }
+  colors.forEach(function (color) {
+    rectsCount = getRandom(1, 3);
+    for(let i=0; i < rectsCount; i++) {
+      x += rectWidth + getRandom(20, 200);
+      let rect = new Rect(x, y, rectWidth, rectWidth, color, strokeColor);
+      rects.push(rect);
+      rect.draw();
+    }
+  });
 }
 
 function setupCanvas(id) {
