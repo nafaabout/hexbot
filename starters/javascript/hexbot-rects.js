@@ -27,7 +27,7 @@ class Cannon {
   move(by) {
     this.x += by.x ? by.x : 0;
     this.y += by.y ? by.y : 0;
-    this.rect.move(by)
+    this.rect.moveBy(by)
   }
 
   changeColor(color) {
@@ -47,10 +47,12 @@ class Rect {
     this.color = color;
     this.strokeColor = strokeColor;
     this.shape = new createjs.Shape();
+    stage.addChild(this.shape);
     this.tween = createjs.Tween.get(this.shape);
   }
 
   draw() {
+    this.shape.graphics.clear();
     this.shape.graphics
       .beginFill(this.color)
       .beginStroke(this.strokeColor)
@@ -61,23 +63,22 @@ class Rect {
     this.shape.regX = this.x + this.width / 2.0
     this.shape.regY = this.y + this.height / 2.0
 
-    stage.addChild(this.shape);
+    // stage.addChild(this.shape);
   }
 
-  clear () {
-    this.shape.graphics.clear();
-  }
-
-  move(by) {
+  moveBy(by) {
     this.x += by.x ? by.x : 0;
     this.y += by.y ? by.y : 0;
     this.shape.x = this.x
     this.shape.y = this.y
   }
 
+  move(to, seconds) {
+    this.tween.to({ y: to.y }, seconds || 1000)
+  }
+
   changeColor(color) {
     this.color = color;
-    this.clear();
     this.draw()
   }
 }
@@ -99,7 +100,6 @@ class Bullet {
   }
 
   draw() {
-    this.shape.graphics.clear();
     this.shape.graphics.beginFill(this.color).drawCircle(this.x, this.y, this.radius)
 
     this.shape.x = this.x
@@ -137,7 +137,7 @@ function createCannon(stage, color) {
   let y = canvas.height - 50;
 
   let cannon = new Cannon(x, y, color, 'gray')
-  cannon.draw(stage)
+  cannon.draw()
 
   return cannon;
 }
@@ -186,6 +186,7 @@ function createRects(colors) {
       let rect = new Rect(x, y, rectWidth, rectWidth, color, strokeColor);
       rects.push(rect);
       rect.draw();
+      rect.move({ y: cannon.y + 20 }, 30000);
     }
   });
 }
