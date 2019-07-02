@@ -1,8 +1,9 @@
-let stage, canvas, cannon, rects = [], colors = [], colorsPallet, offsetX = 100;
+let stage, canvas, cannon, rects = [], colors = [], colorsPallet, offsetX = 100, score = 0;
 let rectWidth = rectHeight = 50;
 let API_URL = 'http://api.noopschallenge.com/hexbot';
 let key_w = 87, key_s = 83, key_a = 65, key_d = 68,
   key_up = 38, key_space = 32, key_left = 37, key_right = 39, key_down = 40;
+let scoreTxt = "Score: 0";
 
 async function start_app() {
   setupCanvas('target')
@@ -21,21 +22,44 @@ async function start_app() {
 function start_game(stage, colors) {
   let rectsCount = chance.integer({ min: 10, max: 20 });
   cannon = createCannon(stage, colors[0]);
+  let txt = new createjs.Text(scoreTxt, "18px Arial", "#000");
+
+  txt.x = canvas.width - 110;
+  txt.y = 10;
+  stage.addChild(txt)
+
   createjs.Ticker.on('tick', function() {
 
-    cannon.bullets.forEach(function(bullet) {
+    let bullet;
+    let bullets = [];
+
+    while(bullet = cannon.bullets.shift()) {
+      let stillAlive = true;
+
       rects.forEach(function(rect, idx) {
         bullet.collidingWith(rect, function() {
+          stillAlive = false;
           if(bullet.color === rect.color) {
             rect.destroy();
             delete rects[idx];
+            score += rect.score;
+            txt.text = `Score: ${score}`
           } else {
+            // console.log('hora')
+            score -= Math.floor(rect.score / 2);
+            score = score < 0 ? 0 : score;
+            txt.text = `Score: ${score}`
             rect.vibrate();
           }
+          bullet.destroy();
           rects
         })
       })
-    });
+
+      if(stillAlive){ bullets.push(bullet) }
+    };
+
+    cannon.bullets = bullets;
 
     stage.update()
   })
@@ -62,9 +86,10 @@ function createRect(color) {
   let strokeColor = 'darkred';
   let rectWidth = 50;
   let x, rect;
+  let rectScore = chance.integer({ min: 10, max: 30 });
 
   x = chance.floating({ min: offsetX, max: canvas.width - offsetX });
-  rect = new Rect(x, -10, rectWidth, rectWidth, color, strokeColor);
+  rect = new Rect(x, -10, rectWidth, rectWidth, color, strokeColor, null, rectScore);
   rects.push(rect);
   rect.draw();
   rect.move({ y: cannon.y + 20 }, 30000);
@@ -84,21 +109,17 @@ let speed = 1;
 function handleKeyDown (e) {
   if(speed < 10)
     speed *= 2;
-  console.log(e.keyCode)
   switch(e.keyCode) {
     case key_left:
-      // substract rect.width from the x of the previous rect
       cannon.move({ x: -2 * speed })
       break;
 
     case key_up:
     case key_space:
-      // substract rect.height from y of the previous rect
       cannon.shoot()
       break;
 
     case key_right:
-      // add rect.width to the x of the previous rect
       cannon.move({ x: 2 * speed })
       break;
 
@@ -144,11 +165,4 @@ async function getColors(count, onComplete) {
     }
     onComplete(colorsValues)
   }
-}
-
-function colliding(rect1, rect2) {
-  return rect1.x < rect2.x + rect2.width &&
-    rect1.x + rect1.width > rect2.x &&
-    rect1.y < rect2.y + rect2.height &&
-    rect1.y + rect1.height > rect2.y
 }

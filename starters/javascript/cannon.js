@@ -15,10 +15,10 @@ class Cannon {
   }
 
   shoot() {
-    let bullet = new Bullet(this.x + 10, this.y - 30, this.color);
+    let bullet = new Bullet(this.x + 10, this.y - 5, this.color);
     this.bullets.push(bullet);
     bullet.draw()
-    bullet.move({ y: -10 });
+    bullet.move({ y: 0 });
   }
 
   move(by) {

@@ -16,9 +16,13 @@ class Bullet {
       _this.y = e.target.target.y;
       _this.x = e.target.target.x;
     })
+
+    this.tween.on('complete', function(e) {
+      stage.removeChild(_this.shape);
+    });
   }
 
-  destroy() {
+  destroy(callback) {
     let shape = this.shape
     this.tween = createjs.Tween.get(this.shape, { override: true })
     this.tween.to({ alpha: 0}, 50)
@@ -35,7 +39,6 @@ class Bullet {
       this.y <= rect.y + rect.height
 
     if(colliding) {
-      this.destroy();
       handleCollide(rect);
     }
   }
