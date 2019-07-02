@@ -28,41 +28,7 @@ function start_game(stage, colors) {
   txt.y = 10;
   stage.addChild(txt)
 
-  createjs.Ticker.on('tick', function() {
-
-    let bullet;
-    let bullets = [];
-
-    while(bullet = cannon.bullets.shift()) {
-      let stillAlive = true;
-
-      rects.forEach(function(rect, idx) {
-        bullet.collidingWith(rect, function() {
-          stillAlive = false;
-          if(bullet.color === rect.color) {
-            rect.destroy();
-            delete rects[idx];
-            score += rect.score;
-            txt.text = `Score: ${score}`
-          } else {
-            // console.log('hora')
-            score -= Math.floor(rect.score / 2);
-            score = score < 0 ? 0 : score;
-            txt.text = `Score: ${score}`
-            rect.vibrate();
-          }
-          bullet.destroy();
-          rects
-        })
-      })
-
-      if(stillAlive){ bullets.push(bullet) }
-    };
-
-    cannon.bullets = bullets;
-
-    stage.update()
-  })
+  createjs.Ticker.on('tick', handleTick);
 
 
   function handleTimeout() {
@@ -76,6 +42,41 @@ function start_game(stage, colors) {
   handleTimeout()
 }
 
+function handleTick() {
+  let bullet;
+  let bullets = [];
+
+  console.log('tick')
+  while(bullet = cannon.bullets.shift()) {
+    let stillAlive = true;
+
+    rects.forEach(function(rect, idx) {
+      bullet.collidingWith(rect, function() {
+        stillAlive = false;
+        if(bullet.color === rect.color) {
+          rect.destroy();
+          delete rects[idx];
+          score += rect.score;
+          txt.text = `Score: ${score}`
+        } else {
+          // console.log('hora')
+          score -= Math.floor(rect.score / 2);
+          score = score < 0 ? 0 : score;
+          txt.text = `Score: ${score}`
+          rect.vibrate();
+        }
+        bullet.destroy();
+        rects
+      })
+    })
+
+    if(stillAlive){ bullets.push(bullet) }
+  };
+
+  cannon.bullets = bullets;
+
+  stage.update()
+}
 function createColorsPallet(colors) {
   colorsPallet = new ColorsPallet(canvas.width - 100, 50, colors)
   colorsPallet.draw();
@@ -92,7 +93,25 @@ function createRect(color) {
   rect = new Rect(x, -10, rectWidth, rectWidth, color, strokeColor, null, rectScore);
   rects.push(rect);
   rect.draw();
-  rect.move({ y: cannon.y + 20 }, 30000);
+  rect.move({ y: cannon.y + 20 }, 30000, function() {
+    if(rect.y >= cannon.y) {
+      gameOver();
+    }
+  });
+}
+
+function gameOver() {
+  createjs.Ticker.removeAllEventListeners('tick');
+  createjs.Tween.removeAllTweens();
+  stage.removeAllChildren();
+
+  ['Game Over!!!', `Score: ${score}`].forEach(function(txt, idx) {
+    let text = new createjs.Text(txt, '26px Arial', 'orange');
+    text.x = canvas.width / 2;
+    text.y = canvas.height / 2 + 50 * idx;
+    stage.addChild(text);
+  });
+  stage.update();
 }
 
 function createCannon(stage, color) {

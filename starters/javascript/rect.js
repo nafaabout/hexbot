@@ -76,7 +76,7 @@ class Rect {
     this.container.y = this.y
   }
 
-  move(to, seconds) {
+  move(to, seconds, onComplete) {
     let _this = this, _container;
     let _halfHeight = this.height * 0.3
     let _halfWith = this.width * 0.3
@@ -87,6 +87,8 @@ class Rect {
       _this.y = _container.y - _halfHeight;
       _this.x = _container.x - _halfWith;
     })
+
+    this.tween.on('complete', onComplete);
   }
 
   changeColor(color) {
