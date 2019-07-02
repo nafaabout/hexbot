@@ -2,115 +2,6 @@ let stage, canvas, cannon, rects = [], colors = []
 let rectWidth = rectHeight = 50;
 let API_URL = 'http://api.noopschallenge.com/hexbot';
 
-class Cannon {
-
-  constructor(x, y, color, strokeColor) {
-    this.x = x;
-    this.y = y;
-    this.color = color;
-    this.strokeColor = strokeColor;
-    this.rect = new Rect(x, y, 20, 50, color, strokeColor);
-    this.bullets = []
-  }
-
-  draw() {
-    this.rect.draw()
-  }
-
-  shoot() {
-    let bullet = new Bullet(this.x + 10, this.y - 30, this.color);
-    this.bullets.push(bullet);
-    bullet.draw()
-    bullet.move({ y: -10 });
-  }
-
-  move(by) {
-    this.x += by.x ? by.x : 0;
-    this.y += by.y ? by.y : 0;
-    this.rect.moveBy(by)
-  }
-
-  changeColor(color) {
-    this.color = color;
-    this.rect.changeColor(color);
-  }
-
-}
-
-class Rect {
-
-  constructor(x, y, width, height, color, strokeColor) {
-    this.x = x;
-    this.y = y;
-    this.width = width;
-    this.height = height;
-    this.color = color;
-    this.strokeColor = strokeColor;
-    this.shape = new createjs.Shape();
-    stage.addChild(this.shape);
-    this.tween = createjs.Tween.get(this.shape);
-  }
-
-  draw() {
-    this.shape.graphics.clear();
-    this.shape.graphics
-      .beginFill(this.color)
-      .beginStroke(this.strokeColor)
-      .drawRect(this.x, this.y, this.width, this.height);
-
-    this.shape.x = this.x
-    this.shape.y = this.y
-    this.shape.regX = this.x + this.width / 2.0
-    this.shape.regY = this.y + this.height / 2.0
-
-    // stage.addChild(this.shape);
-  }
-
-  moveBy(by) {
-    this.x += by.x ? by.x : 0;
-    this.y += by.y ? by.y : 0;
-    this.shape.x = this.x
-    this.shape.y = this.y
-  }
-
-  move(to, seconds) {
-    this.tween.to({ y: to.y }, seconds || 1000)
-  }
-
-  changeColor(color) {
-    this.color = color;
-    this.draw()
-  }
-}
-
-class Bullet {
-
-  constructor(x, y, color) {
-    this.x = x;
-    this.y = y;
-    this.radius = 10;
-    this.color = color;
-    this.shape = new createjs.Shape();
-    this.tween = createjs.Tween.get(this.shape)
-  }
-
-  move(to) {
-    console.log(to);
-    this.tween.to(to, 2000);
-  }
-
-  draw() {
-    this.shape.graphics.beginFill(this.color).drawCircle(this.x, this.y, this.radius)
-
-    this.shape.x = this.x
-    this.shape.y = this.y
-    this.shape.regX = this.x + this.radius
-    this.shape.regY = this.y + this.radius
-
-    stage.addChild(this.shape)
-  }
-}
-
 async function start_app() {
   setupCanvas('target')
   stage = new createjs.Stage(canvas);
@@ -126,6 +17,20 @@ async function start_app() {
 function start_game(stage, colors) {
   cannon = createCannon(stage, colors[0]);
   createjs.Ticker.on('tick', function() {
+
+    cannon.bullets.forEach(function(bullet) {
+      rects.forEach(function(rect) {
+        bullet.collidingWith(rect, function() {
+          if(bullet.color === rect.color) {
+            rect.destroy();
+          } else {
+            rect.vibrate();
+          }
+          rects
+        })
+      })
+    });
+
     stage.update()
   })
 
@@ -218,23 +123,12 @@ async function getColors(count, onComplete) {
   }
 }
 
-function handleCollision(newRect, callback) {
-  for(let i = 0; i < rects.length; i++) {
-    let rect = rects[i];
-    if(colliding(rect, newRect)) {
-      callback(rect);
-    }
-  }
-}
-
 function colliding(rect1, rect2) {
   return rect1.x < rect2.x + rect2.width &&
     rect1.x + rect1.width > rect2.x &&
     rect1.y < rect2.y + rect2.height &&
     rect1.y + rect1.height > rect2.y
 }
-
-
 
 function getRandom(min, max) {
   min = Math.ceil(min);
