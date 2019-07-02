@@ -5,6 +5,7 @@ class Cannon {
     this.y = y;
     this.color = color;
     this.strokeColor = strokeColor;
+    this.container = new createjs.Container();
     this.rect = new Rect(x, y, 20, 50, color, strokeColor);
     this.bullets = []
   }

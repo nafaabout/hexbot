@@ -1,6 +1,8 @@
-let stage, canvas, cannon, rects = [], colors = [], offsetX = 100;
+let stage, canvas, cannon, rects = [], colors = [], colorsPallet, offsetX = 100;
 let rectWidth = rectHeight = 50;
 let API_URL = 'http://api.noopschallenge.com/hexbot';
+let key_w = 87, key_s = 83, key_a = 65, key_d = 68,
+  key_up = 38, key_space = 32, key_left = 37, key_right = 39, key_down = 40;
 
 async function start_app() {
   setupCanvas('target')
@@ -9,6 +11,7 @@ async function start_app() {
   getColors(10, function(respColors) {
     colors = respColors;
     start_game(stage, colors)
+    createColorsPallet(colors);
   })
 
   document.addEventListener('keydown', handleKeyDown);
@@ -37,15 +40,22 @@ function start_game(stage, colors) {
     stage.update()
   })
 
+
   function handleTimeout() {
     if(rectsCount--){
-      let colorIdx = chance.integer({ min: 0, max: colors.length });
+      let colorIdx = chance.integer({ min: 0, max: colors.length - 1 });
       let color = colors[colorIdx];
       createRect(color);
       setTimeout(handleTimeout, chance.integer({ min: 1, max: 10 }) * 1000)
     }
   }
   handleTimeout()
+}
+
+function createColorsPallet(colors) {
+  colorsPallet = new ColorsPallet(canvas.width - 100, 50, colors)
+  colorsPallet.draw();
+  colorsPallet.selectColor(0)
 }
 
 function createRect(color) {
@@ -74,31 +84,27 @@ let speed = 1;
 function handleKeyDown (e) {
   if(speed < 10)
     speed *= 2;
-
+  console.log(e.keyCode)
   switch(e.keyCode) {
-      // left
-    case 37:
+    case key_left:
       // substract rect.width from the x of the previous rect
       cannon.move({ x: -2 * speed })
       break;
 
-      // up
-    case 38:
-    case 32:
+    case key_up:
+    case key_space:
       // substract rect.height from y of the previous rect
       cannon.shoot()
-      idx = chance.integer({ min: 0, max: colors.length })
-      nextColor = colors[idx]
-      cannon.changeColor(nextColor)
       break;
 
-      // right
-    case 39:
+    case key_right:
       // add rect.width to the x of the previous rect
       cannon.move({ x: 2 * speed })
       break;
 
     default:
+      colorsPallet.handleKeyDown(e)
+      cannon.changeColor(colorsPallet.selectedColor)
       return;
   }
 

@@ -1,12 +1,13 @@
 class Rect {
 
-  constructor(x, y, width, height, color, strokeColor) {
+  constructor(x, y, width, height, color, strokeColor, strokeTickness) {
     this.x = x;
     this.y = y;
     this.width = width;
     this.height = height;
     this.color = color;
-    this.strokeColor = strokeColor;
+    this.strokeColor = strokeColor || color;
+    this.strokeTickness = strokeTickness || 1;
     this.shape = new createjs.Shape();
     stage.addChild(this.shape);
     this.tween = createjs.Tween.get(this.shape);
@@ -16,6 +17,7 @@ class Rect {
     this.shape.graphics.clear();
     this.shape.graphics
       .beginFill(this.color)
+      .setStrokeStyle(this.strokeTickness)
       .beginStroke(this.strokeColor)
       .drawRect(this.x, this.y, this.width, this.height);
 
@@ -25,6 +27,19 @@ class Rect {
     this.shape.regY = this.y + this.height / 2.0
 
     // stage.addChild(this.shape);
+  }
+
+  emphasize(color, strokeTickness) {
+    this.shape.graphics.clear();
+    this.strokeColor = color;
+    this.strokeTickness = strokeTickness || 2
+    this.draw();
+  }
+
+  deemphasize(color) {
+    this.shape.graphics.clear();
+    this.strokeColor = this.color;
+    this.draw();
   }
 
   vibrate() {
