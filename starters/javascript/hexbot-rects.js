@@ -1,17 +1,23 @@
-let stage, canvas, cannon, rects = [], colorsCount = 6, colors = [], colorsPallet, offsetX = 100, score = 0;
-let cannonSpeed = 1.5, rectDurationToBottom = 30000, rectWidth = rectHeight = 50;
+let stage, canvas, cannon, gameStopped = false, rects = [], colorsCount, colors = [], colorsPallet, offsetX = 100, score = 0;
+let cannonSpeed = 1.5, rectDurationToBottom, rectWidth = rectHeight = 50;
 let API_URL = 'http://api.noopschallenge.com/hexbot';
 let key_w = 87, key_s = 83, key_a = 65, key_d = 68,
   key_up = 38, key_space = 32, key_left = 37, key_right = 39, key_down = 40;
 let scoreTxt = "Score: 0";
 let txt = new createjs.Text(scoreTxt, "18px Arial", "#000");
 
+let btnTxt = new createjs.Text("w.s.a.d", "14px Arial", "#000")
+let cannonTxt = new createjs.Text("\u2190\u2191\u2192\u2193", "14px Arial", "#000")
+
 async function start_app() {
   setupCanvas('target')
   stage = new createjs.Stage(canvas);
-
+  score = 0
+  colorsCount = 6;
+  rectDurationToBottom = 30000
   start_game(stage)
 
+  document.removeEventListener('click', start_app);
   document.addEventListener('keydown', handleKeyDown);
   document.addEventListener('keyup', handleKeyUp);
 }
@@ -21,6 +27,7 @@ function start_game(stage) {
   createjs.Tween.removeAllTweens();
   stage.removeAllChildren();
   stage.update();
+  gameStopped = false;
 
   let rectsCount = chance.integer({ min: 10, max: 20 });
 
@@ -32,8 +39,9 @@ function start_game(stage) {
     createjs.Ticker.on('tick', handleTick);
 
     function handleTimeout() {
-      console.log(rectsCount);
-      if(rectsCount-- > 0){
+      if(gameStopped) return;
+      if(rectsCount > 0){
+        rectsCount--
         let colorIdx = chance.integer({ min: 0, max: colors.length - 1 });
         let color = colors[colorIdx];
         createRect(color);
@@ -41,7 +49,7 @@ function start_game(stage) {
       } else if(rects.length) {
         setTimeout(handleTimeout, 1000)
       } else {
-        rectDurationToBottom -= 3000
+        rectDurationToBottom -= 5000
         colorsCount += 2
         start_game(stage)
       }
@@ -57,7 +65,11 @@ function handleTick() {
 
   txt.x = canvas.width - 110;
   txt.y = 10;
-  stage.addChild(txt)
+  cannonTxt.x = btnTxt.x = canvas.width -110;
+  btnTxt.y = 170;
+  cannonTxt.y = cannon.y;
+
+  stage.addChild(txt, btnTxt, cannonTxt);
 
   while(bullet = cannon.bullets.shift()) {
     let stillAlive = true;
@@ -112,16 +124,20 @@ function createRect(color) {
 }
 
 function gameOver() {
-  createjs.Ticker.removeAllEventListeners('tick');
+  createjs.Ticker.removeEventListener('tick', handleTick);
   createjs.Tween.removeAllTweens();
   stage.removeAllChildren();
+  gameStopped = true
 
-  ['Game Over!!!', `Score: ${score}`].forEach(function(txt, idx) {
+  let msgs = ['Game Over!!!', `Score: ${score}`, 'Click to play again']
+  msgs.forEach(function(txt, idx) {
     let text = new createjs.Text(txt, '26px Arial', 'orange');
     text.x = canvas.width / 2;
     text.y = canvas.height / 2 + 50 * idx;
     stage.addChild(text);
   });
+
+  document.addEventListener('click', start_app)
   stage.update();
 }
 
