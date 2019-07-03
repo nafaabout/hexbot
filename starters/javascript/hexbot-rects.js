@@ -1,52 +1,54 @@
 let stage, canvas, cannon, rects = [], colors = [], colorsPallet, offsetX = 100, score = 0;
-let rectWidth = rectHeight = 50;
+let cannonSpeed = 1.5, rectWidth = rectHeight = 50;
 let API_URL = 'http://api.noopschallenge.com/hexbot';
 let key_w = 87, key_s = 83, key_a = 65, key_d = 68,
   key_up = 38, key_space = 32, key_left = 37, key_right = 39, key_down = 40;
 let scoreTxt = "Score: 0";
+let txt = new createjs.Text(scoreTxt, "18px Arial", "#000");
 
 async function start_app() {
   setupCanvas('target')
   stage = new createjs.Stage(canvas);
 
-  getColors(10, function(respColors) {
-    colors = respColors;
-    start_game(stage, colors)
-    createColorsPallet(colors);
-  })
+  start_game(stage, colors)
 
   document.addEventListener('keydown', handleKeyDown);
   document.addEventListener('keyup', handleKeyUp);
 }
 
 function start_game(stage, colors) {
-  let rectsCount = chance.integer({ min: 10, max: 20 });
-  cannon = createCannon(stage, colors[0]);
-  let txt = new createjs.Text(scoreTxt, "18px Arial", "#000");
+  getColors(10, function(respColors) {
+    colors = respColors;
+    createColorsPallet(colors);
+    let rectsCount = chance.integer({ min: 10, max: 20 });
+    cannon = createCannon(stage, colors[0]);
 
-  txt.x = canvas.width - 110;
-  txt.y = 10;
-  stage.addChild(txt)
-
-  createjs.Ticker.on('tick', handleTick);
+    createjs.Ticker.on('tick', handleTick);
 
 
-  function handleTimeout() {
-    if(rectsCount--){
-      let colorIdx = chance.integer({ min: 0, max: colors.length - 1 });
-      let color = colors[colorIdx];
-      createRect(color);
-      setTimeout(handleTimeout, chance.integer({ min: 1, max: 10 }) * 1000)
+    function handleTimeout() {
+      if(rectsCount--){
+        let colorIdx = chance.integer({ min: 0, max: colors.length - 1 });
+        let color = colors[colorIdx];
+        createRect(color);
+        setTimeout(handleTimeout, chance.integer({ min: 1, max: 10 }) * 1000)
+      } else if(!rects.length) {
+
+      }
     }
-  }
-  handleTimeout()
+    handleTimeout()
+  })
+
 }
 
 function handleTick() {
   let bullet;
   let bullets = [];
 
-  console.log('tick')
+  txt.x = canvas.width - 110;
+  txt.y = 10;
+  stage.addChild(txt)
+
   while(bullet = cannon.bullets.shift()) {
     let stillAlive = true;
 
@@ -59,7 +61,6 @@ function handleTick() {
           score += rect.score;
           txt.text = `Score: ${score}`
         } else {
-          // console.log('hora')
           score -= Math.floor(rect.score / 2);
           score = score < 0 ? 0 : score;
           txt.text = `Score: ${score}`
@@ -124,13 +125,13 @@ function createCannon(stage, color) {
   return cannon;
 }
 
-let speed = 1;
 function handleKeyDown (e) {
-  if(speed < 10)
-    speed *= 2;
+  if(cannonSpeed < 15)
+    cannonSpeed *= 2;
   switch(e.keyCode) {
     case key_left:
-      cannon.move({ x: -2 * speed })
+      if(cannon.x <= 100) break;
+      cannon.move({ x: -2 * cannonSpeed })
       break;
 
     case key_up:
@@ -139,7 +140,8 @@ function handleKeyDown (e) {
       break;
 
     case key_right:
-      cannon.move({ x: 2 * speed })
+      if(cannon.x >= canvas.width - 100) break;
+      cannon.move({ x: 2 * cannonSpeed })
       break;
 
     default:
@@ -151,12 +153,7 @@ function handleKeyDown (e) {
 }
 
 function handleKeyUp(e) {
-  speed = 1;
-}
-
-let lastTime = new Date() ;
-function accelerate(speed) {
-  return lastTime - new Date() % 10;
+  cannonSpeed = 1.5;
 }
 
 function setupCanvas(id) {
