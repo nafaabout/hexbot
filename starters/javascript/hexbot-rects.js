@@ -1,5 +1,5 @@
-let stage, canvas, cannon, rects = [], colors = [], colorsPallet, offsetX = 100, score = 0;
-let cannonSpeed = 1.5, rectWidth = rectHeight = 50;
+let stage, canvas, cannon, rects = [], colorsCount = 6, colors = [], colorsPallet, offsetX = 100, score = 0;
+let cannonSpeed = 1.5, rectDurationToBottom = 30000, rectWidth = rectHeight = 50;
 let API_URL = 'http://api.noopschallenge.com/hexbot';
 let key_w = 87, key_s = 83, key_a = 65, key_d = 68,
   key_up = 38, key_space = 32, key_left = 37, key_right = 39, key_down = 40;
@@ -10,30 +10,40 @@ async function start_app() {
   setupCanvas('target')
   stage = new createjs.Stage(canvas);
 
-  start_game(stage, colors)
+  start_game(stage)
 
   document.addEventListener('keydown', handleKeyDown);
   document.addEventListener('keyup', handleKeyUp);
 }
 
-function start_game(stage, colors) {
-  getColors(10, function(respColors) {
+function start_game(stage) {
+  // createjs.Ticker.removeAllEventListeners('tick');
+  createjs.Tween.removeAllTweens();
+  stage.removeAllChildren();
+  stage.update();
+
+  let rectsCount = chance.integer({ min: 10, max: 20 });
+
+  getColors(colorsCount, function(respColors) {
     colors = respColors;
     createColorsPallet(colors);
-    let rectsCount = chance.integer({ min: 10, max: 20 });
     cannon = createCannon(stage, colors[0]);
 
     createjs.Ticker.on('tick', handleTick);
 
-
     function handleTimeout() {
-      if(rectsCount--){
+      console.log(rectsCount);
+      if(rectsCount-- > 0){
         let colorIdx = chance.integer({ min: 0, max: colors.length - 1 });
         let color = colors[colorIdx];
         createRect(color);
         setTimeout(handleTimeout, chance.integer({ min: 1, max: 10 }) * 1000)
-      } else if(!rects.length) {
-
+      } else if(rects.length) {
+        setTimeout(handleTimeout, 1000)
+      } else {
+        rectDurationToBottom -= 3000
+        colorsCount += 2
+        start_game(stage)
       }
     }
     handleTimeout()
@@ -57,7 +67,7 @@ function handleTick() {
         stillAlive = false;
         if(bullet.color === rect.color) {
           rect.destroy();
-          delete rects[idx];
+          rects.splice(idx, 1);
           score += rect.score;
           txt.text = `Score: ${score}`
         } else {
@@ -94,7 +104,7 @@ function createRect(color) {
   rect = new Rect(x, -10, rectWidth, rectWidth, color, strokeColor, null, rectScore);
   rects.push(rect);
   rect.draw();
-  rect.move({ y: cannon.y + 20 }, 30000, function() {
+  rect.move({ y: cannon.y + 20 }, rectDurationToBottom, function() {
     if(rect.y >= cannon.y) {
       gameOver();
     }
